@@ -1,19 +1,25 @@
 const mongoose = require('mongoose');
 
-// Mongoose-malli
+// Määrittele skeema henkilötietoja varten
 const personSchema = new mongoose.Schema({
-  name: String,
-  number: String,
-});
-
-// Muotoillaan JSON-vastaus
-personSchema.set('toJSON', {
-  transform: (document, returnedObject) => {
-    returnedObject.id = returnedObject._id.toString(); // Muutetaan _id merkkijonoksi
-    delete returnedObject._id; // Poistetaan _id
-    delete returnedObject.__v; // Poistetaan __v
+  name: {
+    type: String,
+    required: true, // Nimi on pakollinen
+  },
+  number: {
+    type: String,
+    required: true, // Numero on pakollinen
   },
 });
 
-// Exportataan malli
+// Poista __v ja muuta _id -> id JSON-vastauksissa
+personSchema.set('toJSON', {
+  transform: (document, returnedObject) => {
+    returnedObject.id = returnedObject._id.toString();
+    delete returnedObject._id;
+    delete returnedObject.__v;
+  },
+});
+
+// Vie malli
 module.exports = mongoose.model('Person', personSchema);
