@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const Person = require('./models/person'); // Tuo Mongoose-malli
 
+
 dotenv.config(); // Lataa ympäristömuuttujat .env-tiedostosta
 
 const app = express();
@@ -16,6 +17,7 @@ app.use(morgan(customMorganFormat)); // Ota käyttöön mukautettu Morgan-formaa
 
 // MongoDB-yhteys
 const uri = `mongodb+srv://fullstack:${encodeURIComponent(process.env.MONGODB_PASSWORD)}@cluster0.q0iag.mongodb.net/phonebook?retryWrites=true&w=majority`;
+
 
 mongoose
   .connect(uri)
@@ -38,8 +40,23 @@ app.get('/api/persons', (req, res) => {
     });
 });
 
+// GET /api/persons/:id - Hae yksittäinen henkilö ID:n perusteella
+app.get('/api/persons/:id', (req, res, next) => {
+  const id = req.params.id;
+
+  Person.findById(id)
+    .then((person) => {
+      if (person) {
+        res.json(person);
+      } else {
+        res.status(404).end(); // Jos henkilöä ei löydy
+      }
+    })
+    .catch((error) => next(error)); // Siirrä virhe seuraavaan middlewareen
+});
+
 // POST /api/persons - Lisää uusi henkilö tietokantaan
-app.post('/api/persons', (req, res) => {
+app.post('/api/persons', (req, res, next) => {
   const body = req.body;
 
   if (!body.name || !body.number) {
@@ -56,12 +73,50 @@ app.post('/api/persons', (req, res) => {
     .then((savedPerson) => {
       res.status(201).json(savedPerson);
     })
-    .catch((error) => {
-      console.error('Error saving person:', error.message);
-      res.status(500).end();
-    });
+    .catch((error) => next(error));
 });
 
+// PUT /api/persons/:id - Päivitä henkilön tiedot
+app.put('/api/persons/:id', (req, res, next) => {
+  const id = req.params.id;
+  const { name, number } = req.body;
+
+  const updatedPerson = { name, number };
+
+  Person.findByIdAndUpdate(id, updatedPerson, { new: true, runValidators: true, context: 'query' })
+    .then((result) => {
+      if (result) {
+        res.json(result); // Palauta päivitetyt tiedot
+      } else {
+        res.status(404).send({ error: 'Person not found' }); // Jos henkilöä ei löydy
+      }
+    })
+    .catch((error) => next(error)); // Siirrä virhe seuraavaan middlewareen
+});
+
+// DELETE /api/persons/:id - Poista henkilö tietokannasta
+app.delete('/api/persons/:id', (req, res, next) => {
+  const id = req.params.id;
+
+  Person.findByIdAndRemove(id)
+    .then(() => {
+      res.status(204).end(); // Palauta 204 No Content
+    })
+    .catch((error) => next(error));
+});
+
+// Virheidenkäsittely middleware
+app.use((error, req, res, next) => {
+  console.error(error.message);
+
+  if (error.name === 'CastError') {
+    return res.status(400).send({ error: 'Malformatted ID' });
+  }
+
+  next(error);
+});
+
+// Palvelimen käynnistys
 const PORT = 3001;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
