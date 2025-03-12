@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+const baseUrl = '/api/notes'
 
 const App = () => {
   const [persons, setPersons] = useState([]);

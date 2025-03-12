@@ -1,5 +1,7 @@
 const express = require('express');
 const morgan = require('morgan');
+const Person = require('./models/person');
+
 const app = express();
 
 app.use(express.json()); // Middleware JSON-datan käsittelyyn
@@ -40,6 +42,10 @@ let persons = [
 app.get('/api/persons', (req, res) => {
   res.json(persons);
 });
+
+app.get('/', (req, res) => {
+  res.json("Hello World")
+})
 
 // Reitti, joka palauttaa yksittäisen henkilön tiedot
 app.get('/api/persons/:id', (req, res) => {
